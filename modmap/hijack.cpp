@@ -38,6 +38,10 @@ namespace Hijack {
 		}
 
 		process.Write(mappedShellcode, shellcode, sizeof(shellcode));
+		
+		BYTE jump_orginal[6] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+		process.Read(jump_orginal, remoteFunction, sizeof(jump_orginal));
+
 
 		BYTE jump[14] = { 0xFF, 0x25, 0x00, 0x00, 0x00, 0x00 };
 		*reinterpret_cast<PVOID *>(&jump[6]) = mappedShellcode + 1;
@@ -59,8 +63,6 @@ namespace Hijack {
 			}
 		}
 
-		process.Protect(remoteFunction, sizeof(jump), &protect);
-
 		for (BYTE status = 0;; Sleep(1)) {
 			if (process.Read(&status, mappedShellcode, sizeof(status)) != ERROR_SUCCESS) {
 				errorf("failed to read shellcode status at %p\n", mappedShellcode);
@@ -75,6 +77,8 @@ namespace Hijack {
 		process.Free(mappedShellcode);
 
 		printf("[+] executed\n");
+		process.Write(remoteFunction, jump_orginal, sizeof(jump_orginal));
+		process.Protect(remoteFunction, sizeof(jump), &protect);
 
 		return TRUE;
 	}
